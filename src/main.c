@@ -19,23 +19,30 @@
 #include "ssd1306.h"
 #include "timer.h"
 #include "UART.h"
-#include "LabView.h"
 #include "button.h"
 #include "conTester.h"
 
 
 /* UART */
-#define BAUD 9600
+#define BAUD 115200
 #define MYUBRR F_CPU/8/BAUD-1 //full dublex
 
+#define TERMINAL 0
+#define LABVIEW 1
+#define OUTPUT_RESULT_TO TERMINAL
 
 
 /* Encoder */
 RotEnc Encoder;
 
-uint8_t shiftmask[3];
+// uint8_t shiftmask[3];
+// uint8_t read_data[3];
 uint16_t pinOn = 0;
 char buffer[20];
+
+
+/* Board class */
+ConTester_s ConTester;
 
 
 /* Function declarations */
@@ -46,27 +53,30 @@ void inc() {
   pinOn++;
   sprintf(buffer,"%3d",pinOn);
   sendStrXY(buffer,1,12);
-  set_595_Output(pinOn);
+  ConTester_scan(&ConTester);
+  #if OUTPUT_RESULT_TO == LABVIEW
+    ConTester_sendToLabView(&ConTester);
+  #else
+    ConTester_printToTerminal(&ConTester);
+  #endif
 }
 
-void dec() {
-  pinOn--;
-  sprintf(buffer,"%3d",pinOn);
-  sendStrXY(buffer,1,12);
-  set_595_Output(pinOn);
-}
+// void dec() {
+//   pinOn--;
+//   sprintf(buffer,"%3d",pinOn);
+//   sendStrXY(buffer,1,12);
+//   set_595_Output(pinOn);
+// }
 
-void reset() {
-  pinOn = 0;
-  sprintf(buffer,"%3d",pinOn);
-  sendStrXY(buffer,1,12);
-  for(int i=0; i<3;i++) {
-        shiftmask[i] = 0;
-      }
-  reset_595s();
-}
-
-
+// void reset() {
+//   pinOn = 0;
+//   sprintf(buffer,"%3d",pinOn);
+//   sendStrXY(buffer,1,12);
+//   for(int i=0; i<3;i++) {
+//         shiftmask[i] = 0;
+//       }
+//   reset_595s();
+// }
 
 
 
@@ -74,16 +84,6 @@ void reset() {
 int main() {
   init();
 
-  // uint8_t scan_data[8][3] =  {
-  //                             {0x00,0x00,0x00},
-  //                             {0x00,0x00,0x00},
-  //                             {0x00,0x00,0x00},
-  //                             {0x00,0x00,0x00},
-  //                             {0x00,0x00,0x00},
-  //                             {0x00,0x00,0x00},
-  //                             {0x00,0x00,0x00},
-  //                             {0x00,0x00,0x00},
-  //                           };
   uint16_t timer=0;
   
   while(1) {
@@ -112,16 +112,18 @@ int main() {
 
 void init() {
   UART0_Init(MYUBRR);
-  //UART0_puts("UART initialized\r\n");
+  UART0_puts("UART initialized\r\n");
+  
   
   /* SPI init */  
   SPI_master_init();
   SPI_set_data_order(0);
 
-  /* shift registers init */
+
+  /* ConTester board */
   configure_latch_pins();
-  ConTester_init(&latch595,&latch165);
-  reset_595s();
+  ConTester_init(&ConTester,&latch595,&latch165);
+  
 
   /* Display */
   I2C_Init();
@@ -134,8 +136,8 @@ void init() {
   configure_RotEnc_button_pin();
   RotEnc_init(&Encoder, &EncRot_read_pin_A, &EncRot_read_pin_B, &EncRot_read_BTN_pin, 20, 1000, &inc);
   RotEnc_AttachOnCW(&Encoder, &inc);
-  RotEnc_AttachOnCCW(&Encoder, &dec);
-  RotEnc_BTN_attatchLongPress(&Encoder, &reset);
+  // RotEnc_AttachOnCCW(&Encoder, &dec);
+  // RotEnc_BTN_attatchLongPress(&Encoder, &reset);
   
   //sei();
 }

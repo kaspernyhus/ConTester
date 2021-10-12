@@ -32,99 +32,50 @@
 #define OUTPUT_RESULT_TO TERMINAL
 
 
+/* sys tick timer */
+volatile uint8_t ms_tick = 0;
+
 /* Encoder */
 RotEnc Encoder;
-
-// uint8_t shiftmask[3];
-// uint8_t read_data[3];
-uint16_t pinOn = 0;
-char buffer[20];
-
 
 /* Board class */
 ConTester_s ConTester;
 
-
 /* Function declarations */
 void init();
-
-
-void inc() {
-  pinOn++;
-  sprintf(buffer,"%3d",pinOn);
-  sendStrXY(buffer,1,12);
-  ConTester_scan(&ConTester);
-  #if OUTPUT_RESULT_TO == LABVIEW
-    ConTester_sendToLabView(&ConTester);
-  #else
-    ConTester_printToTerminal(&ConTester);
-  #endif
-}
-
-// void dec() {
-//   pinOn--;
-//   sprintf(buffer,"%3d",pinOn);
-//   sendStrXY(buffer,1,12);
-//   set_595_Output(pinOn);
-// }
-
-// void reset() {
-//   pinOn = 0;
-//   sprintf(buffer,"%3d",pinOn);
-//   sendStrXY(buffer,1,12);
-//   for(int i=0; i<3;i++) {
-//         shiftmask[i] = 0;
-//       }
-//   reset_595s();
-// }
-
-
+void run_scan();
+char buffer[20];
 
 
 int main() {
   init();
-
-  uint16_t timer=0;
   
-  while(1) {
-    // scan(scan_data);
-    // sendToLabview(scan_data);
-    // _delay_ms(1000);
-    
-    timer++;
-
-    RotEnc_read(&Encoder);
-    
-    if(timer>250) {
-      timer = 0;
-      // for(int i=0; i<3;i++) {
-      //   sprintf(buffer,"%3d",shiftmask[i]);
-      //   sendStrXY(buffer,i+2,2);
-      // }
+  while(1) {    
+    if(ms_tick) {
+      ms_tick = 0;
+      RotEnc_read(&Encoder);
     }
-
-    _delay_ms(1);
-
   }
 }
 
 
-
 void init() {
+  /* Sys tick timer */
+  timer0_8bit_Init(PRESCALE_64,CTC_MODE,249);
+  timer0_itr_config(ENABLE,COMPARE_MATCH_A);
+  
+  /* UART */
   UART0_Init(MYUBRR);
   UART0_puts("UART initialized\r\n");
-  
   
   /* SPI init */  
   SPI_master_init();
   SPI_set_data_order(0);
 
-
   /* ConTester board */
   configure_latch_pins();
   ConTester_init(&ConTester,&latch595,&latch165);
   
-
   /* Display */
   I2C_Init();
   InitializeDisplay();
@@ -134,10 +85,22 @@ void init() {
   /* Rotary encoder */
   configure_RotEnc_pins();
   configure_RotEnc_button_pin();
-  RotEnc_init(&Encoder, &EncRot_read_pin_A, &EncRot_read_pin_B, &EncRot_read_BTN_pin, 20, 1000, &inc);
-  RotEnc_AttachOnCW(&Encoder, &inc);
-  // RotEnc_AttachOnCCW(&Encoder, &dec);
-  // RotEnc_BTN_attatchLongPress(&Encoder, &reset);
-  
-  //sei();
+  RotEnc_init(&Encoder, &EncRot_read_pin_A, &EncRot_read_pin_B, &EncRot_read_BTN_pin, 20, 1000, &run_scan);
+
+  sei();
+}
+
+
+void run_scan() {
+  ConTester_scan(&ConTester);
+  #if OUTPUT_RESULT_TO == LABVIEW
+    ConTester_sendToLabView(&ConTester);
+  #else
+    ConTester_printToTerminal(&ConTester);
+  #endif
+}
+
+
+ISR(TIMER0_COMPA_vect) {
+  ms_tick = 1;
 }

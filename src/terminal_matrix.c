@@ -19,7 +19,14 @@ const char matrix_bottom[] PROGMEM = "\n \
   +------+------------------------------------------------------------------------+ \n\n\n";
 
 
-void generate_line(char *line, uint8_t line_number, uint8_t *data, uint8_t connections) {
+
+
+/* Function to generate each connection line in the matrix with variable connections */
+/* line: return string */
+/* line number: number in the output column */
+/* data: connection data in bytes */
+/* number_of_chips: how many bytes in data */
+void generate_line(char *line, uint8_t line_number, uint8_t *data, uint8_t number_of_chips) {
   char buffer[20];
   strcpy(line,"\n   | ");
 
@@ -51,12 +58,12 @@ void generate_line(char *line, uint8_t line_number, uint8_t *data, uint8_t conne
   }
   sprintf(buffer," %2d |",line_number);
   strcat(line,buffer);
-  for(int i=0; i<connections; i++) {
-    uint8_t temp = 0;
-    temp = (*data>>i) & 1;
-    if(temp==0) strcat(line, " - ");
-    else strcat(line," X ");
+  /* generate the connection plots in chunks of 8bits = number of chips */
+  for(int i=0; i<number_of_chips; i++) {
+    for(int j=0; j<8;j++) {
+      if(((data[i]>>j) & 1) == 0) strcat(line, " - "); // shift data -> mask with 1 -> bit is either 0 or 1
+      else strcat(line," X ");
+    }
   }
   strcat(line,"| ");
 }
-

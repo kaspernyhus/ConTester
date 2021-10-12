@@ -1,7 +1,7 @@
 #include "conTester.h"
 
 
-uint8_t test_data[][3] = {
+uint8_t test_data_1[][3] = {
       {0x01,0x00,0x00},
       {0x02,0x00,0x00},
       {0x04,0x00,0x00},
@@ -63,11 +63,6 @@ void ConTester_sendToLabView(ConTester_s * const self) {
   sendToLabview(self->scan_data);
 }
 
-void reset_buffer(char *data, uint8_t len) {
-  for(int i=0; i<len; i++) {
-    data[i] = 0;
-  }
-}
 
 void read_string_from_flash(const char *flash, uint16_t len, char *string) {
   char _char;
@@ -83,6 +78,7 @@ void read_string_from_flash(const char *flash, uint16_t len, char *string) {
 void ConTester_printToTerminal(ConTester_s * const self) {
   char line[100];
   char buffer[500];
+  uint8_t temp[NUMBER_OF_CHIPS];
   
   UART0_sendChar(0x0C);                           // Clears CoolTerm !
 
@@ -92,9 +88,12 @@ void ConTester_printToTerminal(ConTester_s * const self) {
   read_string_from_flash(matrix_header,400,buffer);
   UART0_puts(buffer);                             // prints header
 
-  for(int i=0; i<NUMBER_OF_CONNECTIONS; i++) {                       // prints matrix body
-    reset_buffer(line,100);
-    generate_line(line,i+1,&test_data[i][0],NUMBER_OF_CONNECTIONS);  // pass start of pointer for that line (data[i][0])
+  /* prints matrix body */
+  for(int i=0; i<NUMBER_OF_CONNECTIONS; i++) {    // the number of rows in the matrix                 
+    // the number of data bytes in each row
+    // copy row to temporary array to pass on
+    for(int j=0; j<NUMBER_OF_CHIPS; j++) temp[j] = self->scan_data[i][j];                          
+    generate_line(line,i+1,temp,NUMBER_OF_CHIPS);  // generates a full line from data
     UART0_puts(line);
   }
   read_string_from_flash(matrix_bottom,100,buffer);

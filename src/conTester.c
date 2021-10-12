@@ -1,31 +1,31 @@
 #include "conTester.h"
 
 
-uint32_t test_data[] = {
-      0x00000001,
-      0x00000002,
-      0x00000004,
-      0x00000008,
-      0x00000010,
-      0x00000020,
-      0x00000040,
-      0x00000080,
-      0x00000100,
-      0x00000200,
-      0x00000400,
-      0x00000800,
-      0x00001000,
-      0x00002000,
-      0x00004000,
-      0x00008000,
-      0x00010000,
-      0x00020000,
-      0x00040000,
-      0x00070000,
-      0x00100000,
-      0x00200000,
-      0x00400000,
-      0x00800000
+uint8_t test_data[][3] = {
+      {0x01,0x00,0x00},
+      {0x02,0x00,0x00},
+      {0x04,0x00,0x00},
+      {0x08,0x00,0x00},
+      {0x10,0x00,0x00},
+      {0x20,0x00,0x00},
+      {0x40,0x00,0x00},
+      {0x80,0x00,0x00},
+      {0x00,0x01,0x00},
+      {0x00,0x02,0x00},
+      {0x00,0x04,0x00},
+      {0x00,0x08,0x00},
+      {0x00,0x10,0x00},
+      {0x00,0x20,0x00},
+      {0x00,0x40,0x00},
+      {0x00,0x80,0x00},
+      {0x00,0x00,0x01},
+      {0x00,0x00,0x02},
+      {0x00,0x00,0x04},
+      {0x00,0x00,0x08},
+      {0x00,0x00,0x10},
+      {0x00,0x00,0x20},
+      {0x00,0x00,0x40},
+      {0x00,0x00,0x80},
       };
 
 
@@ -69,18 +69,36 @@ void reset_buffer(char *data, uint8_t len) {
   }
 }
 
+void read_string_from_flash(const char *flash, uint16_t len, char *string) {
+  char _char;
+  _char = pgm_read_byte_near(flash);
+  string[0] = _char;
+  for (int k = 1; k < len; k++) {
+    _char = pgm_read_byte_near(flash + k);
+    string[k] = _char;
+  }     
+}
+
 
 void ConTester_printToTerminal(ConTester_s * const self) {
   char line[100];
-  UART0_sendChar(0x0C);             // Clears CoolTerm !
-  UART0_puts(matrix_title);         // Prints title
-  UART0_puts(matrix_header);        // prints header
-  for(int i=0; i<24; i++) {         // prints matrix body
+  char buffer[500];
+  
+  UART0_sendChar(0x0C);                           // Clears CoolTerm !
+
+  read_string_from_flash(matrix_title,500,buffer);   
+  UART0_puts(buffer);                             // Prints title
+  
+  read_string_from_flash(matrix_header,400,buffer);
+  UART0_puts(buffer);                             // prints header
+
+  for(int i=0; i<NUMBER_OF_CONNECTIONS; i++) {                       // prints matrix body
     reset_buffer(line,100);
-    generate_line(line,i+1,test_data[i]);
+    generate_line(line,i+1,&test_data[i][0],NUMBER_OF_CONNECTIONS);  // pass start of pointer for that line (data[i][0])
     UART0_puts(line);
   }
-  UART0_puts(matrix_bottom);        // ends matrix
+  read_string_from_flash(matrix_bottom,100,buffer);
+  UART0_puts(buffer);                             // ends matrix
 }
 
 

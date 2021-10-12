@@ -5,12 +5,14 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <avr/pgmspace.h>
 
-static char matrix_title[454];
-static char matrix_header[339];
-static char matrix_bottom[87];
 
-void generate_line(char *line, uint8_t line_number, uint32_t data);
+const char matrix_title[500];
+const char matrix_header[400];
+const char matrix_bottom[100];
+
+void generate_line(char *line, uint8_t line_number, uint8_t *data, uint8_t connections);
 void generate_con_line(uint8_t *data, uint8_t length, char line[80]);
 
 

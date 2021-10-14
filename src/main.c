@@ -98,6 +98,19 @@ void run_scan() {
   #else
     ConTester_printToTerminal(&ConTester);
   #endif
+  
+  uint8_t test_result = ConTester_test(&ConTester);
+  if(test_result) {
+    clear_display();
+    sendStrXY("ConTester v1.0",0,1);
+    sendStrXY("All OK!",3,5);
+  }
+  else {
+    clear_display();
+    sendStrXY("ConTester v1.0",0,1);
+    sendStrXY("Error detected!",3,1);
+    ConTester_displayConErrors(&ConTester);
+  }
 }
 
 

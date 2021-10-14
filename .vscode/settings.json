@@ -1,5 +1,6 @@
 {
   "files.associations": {
-    "shift_regs.h": "c"
+    "shift_regs.h": "c",
+    "math.h": "c"
   }
 }

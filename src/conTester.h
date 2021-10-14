@@ -22,5 +22,7 @@ void ConTester_scan(ConTester_s * const self);
 void ConTester_sendToLabView(ConTester_s * const self);
 void ConTester_printToTerminal(ConTester_s * const self);
 void ConTester_setPinOut(ConTester_s * const self, uint8_t pinToSet);
+uint8_t ConTester_test(ConTester_s * const self);
+uint8_t ConTester_displayConErrors(ConTester_s * const self);
 
 #endif /* CONTESTER_H_ */

@@ -1,7 +1,7 @@
 #include "conTester.h"
 
 
-uint8_t test_data_1[][3] = {
+const uint8_t correct_cons_1[][3] PROGMEM = {
       {0x01,0x00,0x00},
       {0x02,0x00,0x00},
       {0x04,0x00,0x00},
@@ -53,6 +53,53 @@ void ConTester_scan(ConTester_s * const self) {
 void ConTester_setPinOut(ConTester_s * const self, uint8_t pinToSet) {
   shift74HC595_reset(&self->shiftOUT);
   _set_595_Output(self, pinToSet);
+}
+
+
+uint8_t ConTester_test(ConTester_s * const self) {
+  uint8_t _test_byte;
+  for (int i = 0; i < 24; i++) {
+    for(int j=0; j<3; j++) {
+      _test_byte = pgm_read_byte(&(correct_cons_1[i][j]));
+      if(_test_byte != self->scan_data[i][j]) return 0;
+    }  
+  }
+  return 1;
+}
+
+
+uint8_t ConTester_displayConErrors(ConTester_s * const self) {
+  char buffer[100];
+  uint8_t _test_byte;
+  
+  UART0_puts("   ---------------------------------------------\
+              \n      Faulty connections\n   ---------------------------------------------\n");
+  for (int i = 0; i < 24; i++) {
+    for(int j=0; j<3; j++) {
+      _test_byte = pgm_read_byte(&(correct_cons_1[i][j]));
+      if(_test_byte != self->scan_data[i][j]) {               // Error found
+        uint8_t error_located = 0;
+        /* search for inputs in all 3 chips */
+        for(int k=0; k<3; k++) {
+          /* search each bit in the byte */
+          for(int l=0; l<8; l++) {                              // checking each bit in the byte
+            if((self->scan_data[i][k]>>l)&1) {                  // if bit set = there is a connecton
+              // sprintf(buffer,"k: %d, l: %d \n",k,l);
+              // UART0_puts(buffer);                                  
+              sprintf(buffer,"      Output %2d connected to input %2d\n",i+1,(k*8)+l+1);
+              UART0_puts(buffer);
+              error_located = 1;
+            }
+          }
+        }
+        if(!error_located) {
+          sprintf(buffer,"      Output %2d not connected\n",i+1);
+          UART0_puts(buffer);
+        }
+      }
+    }  
+  }
+  return 1;
 }
 
 
